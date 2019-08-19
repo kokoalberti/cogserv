@@ -1,0 +1,49 @@
+service: cogserv
+
+provider:
+  name: aws
+  runtime: python3.6
+  stage: prod
+
+  region: ${opt:region, 'eu-central-1'}
+
+  environment:
+    PYTHONWARNINGS: ignore
+    GDAL_DATA: /opt/share/gdal
+    GDAL_CACHEMAX: 512
+    VSI_CACHE: TRUE
+    VSI_CACHE_SIZE: 536870912
+    CPL_TMPDIR: /tmp
+    GDAL_HTTP_MERGE_CONSECUTIVE_RANGES: YES
+    GDAL_HTTP_MULTIPLEX: YES
+    GDAL_HTTP_VERSION: 2
+    GDAL_DISABLE_READDIR_ON_OPEN: EMPTY_DIR
+    MAX_THREADS: 20
+
+  apiGateway:
+    binaryMediaTypes:
+      - '*/*'
+
+package:
+  include:
+    cogserv/**
+  exclude:
+    .git/**
+    .gitignore
+    .serverless/**
+    .serverless.yml
+    README.md
+
+functions:
+  cogserv:
+    handler: cogserv.handler.app
+    memorySize: 512
+    timeout: 20
+    layers:
+      - arn:aws:lambda:eu-central-1:059606879383:layer:geolambda:2
+      - arn:aws:lambda:eu-central-1:059606879383:layer:geolambda-python36-mpl-pil:1
+    events:
+      - http:
+          path: /{proxy+}
+          method: get
+          cors: true
